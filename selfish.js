@@ -153,4 +153,97 @@ exports.Base = Object.freeze(Object.create(Object.prototype, {
   }}
 }));
 
+  /**
+   * Merges all the properties of the passed objects into `this` instance (This
+   * method can be used on instances only as prototype objects are frozen).
+   *
+   * If two or more argument objects have own properties with the same name,
+   * the property is overridden, with precedence from right to left, implying,
+   * that properties of the object on the left are overridden by a same named
+   * property of the object on the right.
+   *
+   * @examples
+   *
+   *    var Pet = Dog.extend({
+   *      initialize: function initialize(options) {
+   *        // this.name = options.name -> would have thrown (frozen prototype)
+   *        selfish.merge.call(this, options) // will override all properties.
+   *      },
+   *      call: function(name) {
+   *        return this.name === name ? this.bark() : ''
+   *      },
+   *      name: null
+   *    })
+   *    var pet = Pet.new({ name: 'Benzy', breed: 'Labrador' })
+   *    pet.call('Benzy')   // 'Ruff! Ruff!'
+   */
+var merge = function selfishMerge() {
+  var descriptor = {};
+  Array.prototype.forEach.call(arguments, function(properties) {
+    Object.getOwnPropertyNames(properties).forEach(function(name) {
+      descriptor[name] = Object.getOwnPropertyDescriptor(properties, name);
+    });
+  });
+  Object.defineProperties(this, descriptor);
+  return this;
+};
+
+exports.merge = merge;
+
+var Base = function BaseConstructor() {
+  this.initialize.apply(this, arguments);
+};
+
+Base.prototype.initialize = function BaseInitialize() {
+  //console.log('Base', arguments);
+};
+
+Base.extend = function suiExtend() {
+  var dependencies = [];
+  var constructor = function() { // Call initialize by default if possible
+    if (typeof this.initialize === 'function') {
+      this.initialize.apply(this, arguments);
+    }
+  };
+  // Backward compatibility. Check if is it a function to take its prototype instead
+  Array.prototype.forEach.call(arguments, function(dependency) {
+    if (typeof dependency !== 'function') {
+      dependencies.push(dependency);
+    } else {
+      dependencies.push(dependency.prototype);
+    }
+  });
+  // copy the class methods that makes sui work
+  constructor.extend = this.extend;
+  //console.log('Merging this', this);
+
+  // generate the prototype
+  var descriptor = Object.create(this.prototype);
+  merge.apply(descriptor, arguments)
+  constructor.isPrototypeOf = function customIsPrototypeOf(instance) {
+    return descriptor.isPrototypeOf(instance);
+  };
+  constructor.prototype = Object.freeze(descriptor);
+  constructor.new = function customNew() {
+    var args = Array.prototype.concat.apply([null], arguments);
+    return new (Function.prototype.bind.apply(constructor, args));
+  };
+  //console.log('contructor', constructor);
+  //console.log('contructor prototype', constructor.prototype);
+  return constructor;
+};
+
+Base.isPrototypeOf = function BaseIsPrototypeOf(instance) {
+  return Base.isPrototypeOf(instance);
+};
+
+Base.new = function BaseNew() {
+  var args = Array.prototype.concat.apply([null], arguments);
+  return new (Function.prototype.bind.apply(Base, args));
+};
+
+Base.prototype = Object.freeze(Base.prototype);
+
+exports.Base = Object.freeze(Base);
+
 });
