@@ -32,11 +32,33 @@
   "testling": {
     "harness": "mocha-bdd",
     "files": "test/*.js",
-    "browsers": [
-      "ie/8..latest",
-      "chrome/latest",
-      "firefox/latest"
-    ]
+    "browsers": {
+      "iexplore": [
+        9,
+        10
+      ],
+      "chrome": [
+        16,
+        20,
+        25,
+        "canary"
+      ],
+      "firefox": [
+        10,
+        15,
+        16,
+        17,
+        18,
+        "nightly"
+      ],
+      "safari": [
+        5,
+        6
+      ],
+      "opera": [
+        12
+      ]
+    }
   },
   "main": "./selfish.js",
   "engines": {
